@@ -17,7 +17,7 @@ export const MyNFTs = ({ contract }: { contract: any }) => {
     </div>
   );
 
-  if (isLoading) return <div className="text-center p-10 text-zinc-500">Загрузка ваших активов...</div>;
+  if (isLoading) return <div className="text-center p-10 text-zinc-500">Uploading your assets...</div>;
 
   return (
     <div className="mt-10">
