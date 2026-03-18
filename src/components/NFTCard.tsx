@@ -42,7 +42,7 @@ export const NFTCard = ({ nft, contract }: Props) => {
         <div className="flex justify-between items-center mt-2">
           <span className="text-zinc-500 text-sm font-medium">Price</span>
           <span className="text-emerald-400 font-bold text-lg">
-            {claimCondition ? `${toEther(claimCondition.pricePerToken)} ETH Sepolia` : "Загрузка..."}
+            {claimCondition ? `${toEther(claimCondition.pricePerToken)} ETH Sepolia` : "Loading..."}
           </span>
         </div>
       </div>
