@@ -1,6 +1,6 @@
 import { MyNFTs } from "./components/MyNFTs";
 import { getContract } from "thirdweb";
-import { sepolia } from "thirdweb/chains"; // Убедитесь, что сеть совпадает с вашим контрактом
+import { polygon } from "thirdweb/chains"; // Убедитесь, что сеть совпадает с вашим контрактом
 import { useReadContract } from "thirdweb/react";
 import { getNFTs } from "thirdweb/extensions/erc1155";
 import { client } from "./client";
@@ -10,7 +10,7 @@ import { NFTCard } from "./components/NFTCard";
 // 1. Настройка контракта
 const contract = getContract({
   client,
-  chain: sepolia, 
+  chain: polygon, 
   address: "0x8c70A206A5595f7d82B70F552D53BD65463D5891", // Вставьте сюда адрес своего контракта
 });
 
