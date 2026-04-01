@@ -1,3 +1,6 @@
+> ### 📢 Upcoming Launch!
+> **Alpha NFT** is launching on **Product Hunt** on March 2, 2026. 
+> Please support our open-source project by clicking **"Notify Me"** [on our launch page](https://www.producthunt.com/products/thirdweb-vite-alpha-nft?launch=thirdweb-vite-alpha-nft).
 
 ![tw-banner](https://github.com/thirdweb-example/vite-starter/assets/57885104/cfe2164b-b50b-4d8e-aaaa-31331da2d647)
 
