@@ -58,8 +58,7 @@ export const NFTCard = ({ nft, contract }: Props) => {
                    !bg-white !text-black hover:!bg-zinc-200 disabled:!bg-zinc-800 disabled:!text-zinc-500"
         
         // Указываем кнопке, в какой сети должна проходить транзакция
-        // Если сеть в MetaMask не совпадает, кнопка сначала сама покажет "Switch Network"
-        chain={contract.chain} 
+        // Если сеть в MetaMask не совпадает, кнопка сначала сама покажет "Switch Network" 
         
         transaction={() => claimTo({
           contract,
