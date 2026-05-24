@@ -1,8 +1,11 @@
 import * as HypeLabModule from "@hypelab/sdk-react";
 import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { client } from "../client";
+// Проверьте, что в LandingPage.tsx импорт выглядит строго с одной точкой:
+import { PrivacyLink } from "./PrivacyLink"; 
+// Для кнопки OKX (если она осталась в корне src) используем две точки:
+import { OKXButton } from "../OKXButton"; 
 
-// Безопасно извлекаем Banner из модуля
 const Banner = (HypeLabModule as any).Banner || (HypeLabModule as any).default?.Banner;
 
 export const LandingPage = ({ children }: { children: React.ReactNode }) => {
@@ -17,23 +20,40 @@ export const LandingPage = ({ children }: { children: React.ReactNode }) => {
       alignItems: 'center', 
       justifyContent: 'center', 
       minHeight: '100vh', 
-      paddingBottom: '120px',
+      paddingBottom: '160px', 
       position: 'relative'
     }}>
-      <div style={{ textAlign: 'center' }}>
-        <h1>NFT Marketplace</h1>
-        <p style={{ marginBottom: '20px', color: '#666' }}>Connect to access ERC1155</p>
-        <ConnectButton client={client} />
+      
+      <div style={{ 
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px' 
+      }}>
+        <ConnectButton 
+          client={client} 
+          connectButton={{
+            label: "Connect Wallet"
+          }}
+        />
+        <OKXButton />
       </div>
 
-      {/* Фиксированный контейнер для баннера */}
       <div style={{ 
         position: 'fixed', 
         bottom: '20px', 
         display: 'flex', 
-        justifyContent: 'center',
+        flexDirection: 'column', 
+        alignItems: 'center',
+        gap: '10px', 
         width: '100%' 
       }}>
+        
+        {/* Компонент из текущей папки */}
+        <PrivacyLink />
+
+        {/* Контейнер для баннера */}
         <div style={{ 
           width: '320px', 
           height: '50px', 

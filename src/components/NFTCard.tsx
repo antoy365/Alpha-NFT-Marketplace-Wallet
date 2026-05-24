@@ -2,19 +2,22 @@ import { TransactionButton, MediaRenderer, useActiveAccount } from "thirdweb/rea
 import { claimTo } from "thirdweb/extensions/erc1155";
 import { client } from "../client";
 import { type NFT } from "thirdweb";
-import { useChainMetadata } from "thirdweb/react";
 import { useReadContract } from "thirdweb/react";
 import { getActiveClaimCondition } from "thirdweb/extensions/erc1155";
 import { toEther } from "thirdweb/utils";
 
-
 interface Props {
   nft: NFT;
-  contract: any;
+  contract: any; 
 }
 
 export const NFTCard = ({ nft, contract }: Props) => {
   const account = useActiveAccount();
+
+  // 1. Динамически определяем имя валюты на основе ID сети текущего контракта
+  // В Thirdweb v5 ID сети хранится в contract.chain.id
+  const isPolygon = contract.chain?.id === 137;
+  const currencyName = isPolygon ? "POL" : "Sepolia ETH";
 
   // Получаем актуальную цену из контракта
   const { data: claimCondition } = useReadContract(getActiveClaimCondition, {
@@ -42,7 +45,9 @@ export const NFTCard = ({ nft, contract }: Props) => {
         <div className="flex justify-between items-center mt-2">
           <span className="text-zinc-500 text-sm font-medium">Price</span>
           <span className="text-emerald-400 font-bold text-lg">
-            {claimCondition ? `${toEther(claimCondition.pricePerToken)} polygon` : "Loading..."}
+            {claimCondition 
+              ? `${toEther(claimCondition.pricePerToken)} ${currencyName}` // Авто-подстановка валюты
+              : "Loading..."}
           </span>
         </div>
       </div>
@@ -51,16 +56,22 @@ export const NFTCard = ({ nft, contract }: Props) => {
       <TransactionButton
         className="!w-full !rounded-xl !py-3 !font-bold !text-sm !transition-all !border-none 
                    !bg-white !text-black hover:!bg-zinc-200 disabled:!bg-zinc-800 disabled:!text-zinc-500"
+        
+        // Указываем кнопке, в какой сети должна проходить транзакция
+        // Если сеть в MetaMask не совпадает, кнопка сначала сама покажет "Switch Network"
+        chain={contract.chain} 
+        
         transaction={() => claimTo({
           contract,
           to: account?.address as string,
           tokenId: nft.id,
           quantity: 1n,
         })}
-        onTransactionConfirmed={() => alert("Successfully purchased!")}
+        onTransactionConfirmed={() => alert(`Successfully purchased on ${isPolygon ? 'Polygon' : 'Sepolia'}!`)}
       >
         {account ? "Buy now" : "Need a wallet"}
       </TransactionButton>
     </div>
   );
 };
+

@@ -2,8 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Можно добавить темный фон для всего сайта сразу */
 body {
-  @apply bg-black text-white;
+  /* text-white оставляем для белого текста, а bg-black удаляем */
+  @apply text-white; 
+  
+  /* Задаем фоновую картинку из папки public */
+  background-image: url('/Baron Web.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
