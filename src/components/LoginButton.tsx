@@ -1,6 +1,6 @@
 import { ConnectButton } from "thirdweb/react";
 import { client } from "../client"; 
-import { polygon } from "thirdweb/chains";
+import { polygon, sepolia } from "thirdweb/chains"; // ИЗМЕНЕНО: Импортируем обе сети
 // Импортируем функции кошельков
 import { createWallet, walletConnect } from "thirdweb/wallets";
 
@@ -15,14 +15,15 @@ export const LoginButton = () => {
   return (
     <ConnectButton
       client={client}
-      chain={polygon}
+      // ИЗМЕНЕНО: Вместо chain={polygon} указываем массив поддерживаемых сетей
+      chains={[polygon, sepolia]} 
       theme={"dark"}
-      wallets={wallets} // Добавляем этот пропс
+      wallets={wallets} 
       connectButton={{
         label: "Enter the store",
       }}
       connectModal={{
-        size: "compact", // Компактный вид лучше для мобильных устройств
+        size: "compact", 
         title: "Select a wallet",
       }}
     />
