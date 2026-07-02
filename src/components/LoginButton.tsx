@@ -18,7 +18,8 @@ export const LoginButton = () => {
       // ИЗМЕНЕНО: Вместо chain={polygon} указываем массив поддерживаемых сетей
       chains={[polygon, sepolia]} 
       theme={"dark"}
-      wallets={wallets} 
+      wallets={wallets}
+      locale="en_US" 
       connectButton={{
         label: "Enter the store",
       }}

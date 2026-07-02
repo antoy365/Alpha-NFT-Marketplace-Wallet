@@ -7,7 +7,7 @@ body {
   @apply text-white; 
   
   /* Задаем фоновую картинку из папки public */
-  background-image: url('/Baron Web.png');
+  background-image: url('/Alpha_Store.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

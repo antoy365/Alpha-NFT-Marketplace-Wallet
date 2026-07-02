@@ -14,12 +14,30 @@ interface Props {
 export const NFTCard = ({ nft, contract }: Props) => {
   const account = useActiveAccount();
 
-  // 1. Динамически определяем имя валюты на основе ID сети текущего контракта
-  // В Thirdweb v5 ID сети хранится в contract.chain.id
-  const isPolygon = contract.chain?.id === 137;
-  const currencyName = isPolygon ? "POL" : "Sepolia ETH";
+ // 1. Определяем ID текущей сети
+const chainId = contract.chain?.id;
 
-  // Получаем актуальную цену из контракта
+// 2. Явно проверяем каждую сеть по её ID
+const isPolygon = chainId === 137;
+const isSepolia = chainId === 11155111;
+const isAbstract = chainId === 11124; // Для Abstract Testnet
+
+// 3. Динамически выставляем текстовые названия
+let currencyName = "ETH";
+let networkName = "Unknown Network";
+
+if (isPolygon) {
+  currencyName = "POL";
+  networkName = "Polygon";
+} else if (isSepolia) {
+  currencyName = "Sepolia ETH";
+  networkName = "Sepolia";
+} else if (isAbstract) {
+  currencyName = "ETH";
+  networkName = "Abstract Testnet";
+  
+}
+
   const { data: claimCondition } = useReadContract(getActiveClaimCondition, {
     contract,
     tokenId: nft.id,
@@ -28,8 +46,11 @@ export const NFTCard = ({ nft, contract }: Props) => {
   return (
     <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-3xl p-5 hover:border-zinc-700 hover:scale-[1.02] transition-all duration-300 shadow-2xl group">
       
-      {/* Контейнер для изображения */}
       <div className="relative aspect-square rounded-2xl overflow-hidden mb-5">
+        <div className="absolute top-3 left-3 bg-zinc-950/80 backdrop-blur-md text-zinc-300 text-xs font-mono font-bold px-2 py-0.5 rounded-md select-none pointer-events-none border border-zinc-800/40 z-10">
+          #{nft.id.toString()}
+        </div>
+
         <MediaRenderer 
           client={client} 
           src={nft.metadata.image} 
@@ -37,7 +58,6 @@ export const NFTCard = ({ nft, contract }: Props) => {
         />
       </div>
       
-      {/* Информация об NFT */}
       <div className="flex flex-col gap-1 mb-6">
         <h3 className="text-xl font-bold tracking-tight text-white truncate">
           {nft.metadata.name}
@@ -46,19 +66,15 @@ export const NFTCard = ({ nft, contract }: Props) => {
           <span className="text-zinc-500 text-sm font-medium">Price</span>
           <span className="text-emerald-400 font-bold text-lg">
             {claimCondition 
-              ? `${toEther(claimCondition.pricePerToken)} ${currencyName}` // Авто-подстановка валюты
+              ? `${toEther(claimCondition.pricePerToken)} ${currencyName}` 
               : "Loading..."}
           </span>
         </div>
       </div>
       
-      {/* Кнопка покупки */}
       <TransactionButton
         className="!w-full !rounded-xl !py-3 !font-bold !text-sm !transition-all !border-none 
                    !bg-white !text-black hover:!bg-zinc-200 disabled:!bg-zinc-800 disabled:!text-zinc-500"
-        
-        // Указываем кнопке, в какой сети должна проходить транзакция
-        // Если сеть в MetaMask не совпадает, кнопка сначала сама покажет "Switch Network" 
         
         transaction={() => claimTo({
           contract,
@@ -66,7 +82,8 @@ export const NFTCard = ({ nft, contract }: Props) => {
           tokenId: nft.id,
           quantity: 1n,
         })}
-        onTransactionConfirmed={() => alert(`Successfully purchased on ${isPolygon ? 'Polygon' : 'Sepolia'}!`)}
+        // 3. Используем динамическое имя сети в алерте
+        onTransactionConfirmed={() => alert(`Successfully purchased on ${networkName}!`)}
       >
         {account ? "Buy now" : "Need a wallet"}
       </TransactionButton>
