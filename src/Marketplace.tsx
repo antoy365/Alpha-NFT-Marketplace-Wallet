@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { MyNFTs } from "./components/MyNFTs";
 import { getContract } from "thirdweb";
-import { polygon, sepolia, abstractTestnet } from "thirdweb/chains"; // Добавили abstractTestnet
+import { polygon, sepolia, abstractTestnet } from "thirdweb/chains"; 
 import { useReadContract, useSwitchActiveWalletChain, useActiveAccount } from "thirdweb/react"; 
 import { getNFTs } from "thirdweb/extensions/erc1155";
 import { client } from "./client";
@@ -13,15 +13,18 @@ export default function Marketplace() {
   const switchChain = useSwitchActiveWalletChain();
   const [copied, setCopied] = useState(false);
 
-  // 1. Добавляем стейт для переключения между основным магазином и Abstract
+  // 1. Главные вкладки магазина
   const [activeTab, setActiveTab] = useState<"main_store" | "abstract_store">("main_store");
+
+  // 2. Стейт для внутренних страниц Abstract (Часть 1, 2 или 3)
+  const [abstractPage, setAbstractPage] = useState<1 | 2 | 3>(1);
+  const ITEMS_PER_PAGE = 170; // Делим 510 NFT на 3 ровные части по 170 шт.
 
   // Состояние подсети для главного магазина (Polygon/Sepolia)
   const [selectedNetwork, setSelectedNetwork] = useState<"polygon" | "sepolia">(
     () => (localStorage.getItem("alpha_store_network") as "polygon" | "sepolia") || "polygon"
   );
 
-  // 2. Динамически определяем СЕТЬ и АДРЕС контракта в зависимости от вкладки
   const isAbstract = activeTab === "abstract_store";
   
   const currentChain = isAbstract 
@@ -29,18 +32,24 @@ export default function Marketplace() {
     : (selectedNetwork === "polygon" ? polygon : sepolia);
 
   const contractAddress = isAbstract
-    ? "0x1d23f41509eCDf9B0e4537564833E07deAEE2805" // Ваш контракт для Abstract Testnet
-    : "0x8c70A206A5595f7d82B70F552D53BD65463D5891"; // Ваш текущий контракт для Polygon/Sepolia
+    ? "0x1d23f41509eCDf9B0e4537564833E07deAEE2805" 
+    : "0x8c70A206A5595f7d82B70F552D53BD65463D5891"; 
 
-  // Инициализируем контракт нужной сети
   const contract = getContract({
     client,
     chain: currentChain, 
     address: contractAddress, 
   });
 
+  // 3. Динамический расчет диапазона токенов для блокчейна
+  // Стр 1: с 0 по 170 | Стр 2: с 170 по 340 | Стр 3: с 340 по 510
+  const startId = isAbstract ? (abstractPage - 1) * ITEMS_PER_PAGE : 0;
+  const totalNftsToFetch = isAbstract ? ITEMS_PER_PAGE : 113;
+
   const { data: nfts, isLoading, error } = useReadContract(getNFTs, { 
-    contract: contract 
+    contract: contract,
+    start: BigInt(startId), // Указываем блокчейну точку старта
+    count: BigInt(totalNftsToFetch), // Запрашиваем только выбранную пачку
   });
 
   const handleCopyContract = () => {
@@ -50,7 +59,6 @@ export default function Marketplace() {
     });
   };
 
-  // Переключение сетей для главного магазина
   const handleNetworkChange = async (network: "polygon" | "sepolia") => {
     setSelectedNetwork(network);
     localStorage.setItem("alpha_store_network", network);
@@ -63,27 +71,25 @@ export default function Marketplace() {
         await switchChain(sepolia);
       }
     } catch (e) {
-      console.error("Кошелек отклонил переключение сети:", e);
+      console.error("The wallet rejected the network switch.:", e);
     }
   };
 
-  // 3. Автоматическое переключение сети кошелька при смене вкладки
   useEffect(() => {
     if (!account) return;
 
     if (activeTab === "abstract_store") {
-      switchChain(abstractTestnet).catch((e) => console.error("Ошибка переключения на Abstract:", e));
+      switchChain(abstractTestnet).catch((e) => console.error("Error switching to Abstract:", e));
     } else {
-      // Возвращаем сеть, которая выбрана в селекте главного магазина
       if (selectedNetwork === "polygon") {
-        switchChain(polygon).catch((e) => console.error("Ошибка переключения на Polygon:", e));
+        switchChain(polygon).catch((e) => console.error("Error switching to Polygon:", e));
       } else {
-        switchChain(sepolia).catch((e) => console.error("Ошибка переключения на Sepolia:", e));
+        switchChain(sepolia).catch((e) => console.error("Error switching to Sepolia:", e));
       }
     }
   }, [activeTab, selectedNetwork, account, switchChain]);
 
-  if (error) return <div style={{ color: "red", padding: "50px" }}>Ошибка блокчейна: {error.message}</div>;
+  if (error) return <div style={{ color: "red", padding: "50px" }}>Blockchain error: {error.message}</div>;
 
   return (
     <div className="min-h-screen bg-black text-white px-6 py-10"> 
@@ -143,17 +149,13 @@ export default function Marketplace() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            
-            {/* Динамическое управление выбором сети в шапке */}
             <div className="flex flex-col gap-1">
               <label className="text-xs text-zinc-500 uppercase tracking-wider font-bold">store chain:</label>
               {isAbstract ? (
-                // Если выбрана вкладка Abstract, скрываем селект и показываем статичный статус сети
                 <div className="bg-zinc-950 text-emerald-400 border border-purple-900/40 rounded px-3 py-2 text-sm font-medium font-mono">
                   🤖 Abstract Testnet
                 </div>
               ) : (
-                // Если обычная вкладка — показываем ваш привычный селект сетей
                 <select 
                   value={selectedNetwork} 
                   onChange={(e) => handleNetworkChange(e.target.value as "polygon" | "sepolia")}
@@ -169,7 +171,44 @@ export default function Marketplace() {
           </div>
         </header>
 
-        {/* Сетка товаров (будет автоматически реактивно обновляться) */}
+        {/* 4. ИНТЕРФЕЙС ПОДВКЛАДОК: Отображается ТОЛЬКО когда открыт Abstract */}
+        {isAbstract && (
+          <div className="flex flex-wrap items-center gap-2 mb-6 bg-zinc-950 p-1.5 rounded-lg border border-zinc-900 w-fit">
+            <span className="text-xs text-zinc-500 uppercase px-2 font-bold font-mono tracking-wider">Коллекция:</span>
+            <button
+              onClick={() => setAbstractPage(1)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
+                abstractPage === 1 
+                  ? "bg-purple-950/60 text-purple-400 border border-purple-900/50" 
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Part 1 (NFT 1-170)
+            </button>
+            <button
+              onClick={() => setAbstractPage(2)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
+                abstractPage === 2 
+                  ? "bg-purple-950/60 text-purple-400 border border-purple-900/50" 
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Part 2 (NFT 171-340)
+            </button>
+            <button
+              onClick={() => setAbstractPage(3)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
+                abstractPage === 3 
+                  ? "bg-purple-950/60 text-purple-400 border border-purple-900/50" 
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Part 3 (NFT 341-510)
+            </button>
+          </div>
+        )}
+
+        {/* Сетка товаров */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-white"></div>
@@ -182,9 +221,11 @@ export default function Marketplace() {
           </div>
         )}
 
+        {/* Профиль / Личные NFT пользователя */}
         <div className="mt-20 pt-10 border-t border-zinc-900">
           <MyNFTs contract={contract} />
         </div>
+
       </div>
     </div>
   );
