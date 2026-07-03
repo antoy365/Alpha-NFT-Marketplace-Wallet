@@ -174,7 +174,7 @@ export default function Marketplace() {
         {/* 4. ИНТЕРФЕЙС ПОДВКЛАДОК: Отображается ТОЛЬКО когда открыт Abstract */}
         {isAbstract && (
           <div className="flex flex-wrap items-center gap-2 mb-6 bg-zinc-950 p-1.5 rounded-lg border border-zinc-900 w-fit">
-            <span className="text-xs text-zinc-500 uppercase px-2 font-bold font-mono tracking-wider">Коллекция:</span>
+            <span className="text-xs text-zinc-500 uppercase px-2 font-bold font-mono tracking-wider">Collection:</span>
             <button
               onClick={() => setAbstractPage(1)}
               className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
