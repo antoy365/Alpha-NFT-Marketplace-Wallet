@@ -48,8 +48,8 @@ export default function Marketplace() {
 
   const { data: nfts, isLoading, error } = useReadContract(getNFTs, { 
     contract: contract,
-    start: BigInt(startId), // Указываем блокчейну точку старта
-    count: BigInt(totalNftsToFetch), // Запрашиваем только выбранную пачку
+    start: BigInt(startId) as any, // Указываем блокчейну точку старта
+    count: BigInt(totalNftsToFetch) as any, // Запрашиваем только выбранную пачку
   });
 
   const handleCopyContract = () => {

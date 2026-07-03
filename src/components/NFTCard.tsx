@@ -40,7 +40,7 @@ if (isPolygon) {
 
   const { data: claimCondition } = useReadContract(getActiveClaimCondition, {
     contract,
-    tokenId: nft.id,
+    tokenId: nft.id as any,
   });
 
   return (
