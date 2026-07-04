@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  /* text-white оставляем для белого текста, а bg-black удаляем */
+  @apply text-white; 
+  
+  /* Задаем фоновую картинку из папки public */
+  background-image: url('/Alpha_Store.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
