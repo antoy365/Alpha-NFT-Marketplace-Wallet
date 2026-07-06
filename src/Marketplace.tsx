@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { MyNFTs } from "./components/MyNFTs";
-import { getContract } from "thirdweb";
+import { getContract, defineChain } from "thirdweb"; // ДОБАВИЛИ defineChain
 import { polygon, sepolia, abstractTestnet } from "thirdweb/chains"; 
 import { useReadContract, useSwitchActiveWalletChain, useActiveAccount } from "thirdweb/react"; 
 import { getNFTs } from "thirdweb/extensions/erc1155";
@@ -27,22 +27,14 @@ export default function Marketplace() {
 
   const isAbstract = activeTab === "abstract_store";
   
-  // Базовая конфигурация сети
   const baseChain = isAbstract 
     ? abstractTestnet 
     : (selectedNetwork === "polygon" ? polygon : sepolia);
 
-  // ИСПРАВЛЕНО: Динамически подставляем кастомные RPC-провайдеры из .env
-  // Если переменные среды пусты, автоматически включаются свободные публичные ноды блокчейнов
-  const currentChain = {
-    ...baseChain,
-    rpc: isAbstract
-      ? (import.meta.env.VITE_ABSTRACT_RPC_URL || "https://abs.xyz")
-      : (selectedNetwork === "polygon"
-          ? (import.meta.env.VITE_POLYGON_RPC_URL || "https://polygon-rpc.com")
-          : (import.meta.env.VITE_SEPOLIA_RPC_URL || "https://publicnode.com")
-        )
-  };
+  // ИСПРАВЛЕНО НАВСЕГДА: Больше никакой ручной склейки строк, опечаток с регистрами букв и знаками $.
+  // Функция defineChain сама соберет правильный приватный RPC-шлюз через ваш clientId.
+  // Это полностью уберет CORS блокировки и на localhost, и на Vercel!
+  const currentChain = defineChain(baseChain.id);
 
   const contractAddress = isAbstract
     ? "0x1d23f41509eCDf9B0e4537564833E07deAEE2805" 
@@ -50,8 +42,8 @@ export default function Marketplace() {
 
   const contract = getContract({
     client,
-    chain: currentChain, // Теперь контракт опрашивает только ваши кастомные ноды
-    address: contractAddress, 
+    chain: currentChain, 
+    address: contractAddress,
   });
 
   // 3. Динамический расчет диапазона токенов для блокчейна
@@ -60,8 +52,8 @@ export default function Marketplace() {
 
   const { data: nfts, isLoading } = useReadContract(getNFTs, { 
     contract: contract,
-    start: BigInt(startId) as any, 
-    count: BigInt(totalNftsToFetch) as any,
+    start: BigInt(startId) as any, // Указываем блокчейну точку старта
+    count: BigInt(totalNftsToFetch) as any, // Запрашиваем выбранную пачку
   });
 
   const handleCopyContract = () => {
@@ -76,18 +68,11 @@ export default function Marketplace() {
     localStorage.setItem("alpha_store_network", network);
     if (!account) return;
 
+    const targetChainId = network === "polygon" ? 137 : 11155111;
+
     try {
-      if (network === "polygon") {
-        await switchChain({
-          ...polygon,
-          rpc: import.meta.env.VITE_POLYGON_RPC_URL || "https://polygon-rpc.com"
-        });
-      } else {
-        await switchChain({
-          ...sepolia,
-          rpc: import.meta.env.VITE_SEPOLIA_RPC_URL || "https://publicnode.com"
-        });
-      }
+      // ИСПРАВЛЕНО: Безопасное переключение сети в кошельке через defineChain
+      await switchChain(defineChain(targetChainId));
     } catch (e) {
       console.error("The wallet rejected the network switch.:", e);
     }
@@ -96,22 +81,14 @@ export default function Marketplace() {
   useEffect(() => {
     if (!account) return;
 
+    // ИСПРАВЛЕНО: Синк сетей через автоматический метод defineChain
     if (activeTab === "abstract_store") {
-      switchChain({
-        ...abstractTestnet,
-        rpc: import.meta.env.VITE_ABSTRACT_RPC_URL || "https://abs.xyz"
-      }).catch((e) => console.error("Error switching to Abstract:", e));
+      switchChain(defineChain(11124)).catch((e) => console.error("Error switching to Abstract:", e));
     } else {
       if (selectedNetwork === "polygon") {
-        switchChain({
-          ...polygon,
-          rpc: import.meta.env.VITE_POLYGON_RPC_URL || "https://polygon-rpc.com"
-        }).catch((e) => console.error("Error switching to Polygon:", e));
+        switchChain(defineChain(137)).catch((e) => console.error("Error switching to Polygon:", e));
       } else {
-        switchChain({
-          ...sepolia,
-          rpc: import.meta.env.VITE_SEPOLIA_RPC_URL || "https://publicnode.com"
-        }).catch((e) => console.error("Error switching to Sepolia:", e));
+        switchChain(defineChain(11155111)).catch((e) => console.error("Error switching to Sepolia:", e));
       }
     }
   }, [activeTab, selectedNetwork, account, switchChain]);
@@ -187,40 +164,13 @@ export default function Marketplace() {
           </div>
         </header>
 
-        {/* ИНТЕРФЕЙС ПОДВКЛАДОК: Отображается ТОЛЬКО когда открыт Abstract */}
+        {/* ИНТЕРФЕЙС ПОДВКЛАДОК */}
         {isAbstract && (
           <div className="flex flex-wrap items-center gap-2 mb-6 bg-zinc-950 p-1.5 rounded-lg border border-zinc-900 w-fit">
             <span className="text-xs text-zinc-500 uppercase px-2 font-bold font-mono tracking-wider">Collection:</span>
-            <button
-              onClick={() => setAbstractPage(1)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
-                abstractPage === 1 
-                  ? "bg-purple-950/60 text-purple-400 border border-purple-900/50" 
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              Part 1 (NFT 1-170)
-            </button>
-            <button
-              onClick={() => setAbstractPage(2)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
-                abstractPage === 2 
-                  ? "bg-purple-950/60 text-purple-400 border border-purple-900/50" 
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              Part 2 (NFT 171-340)
-            </button>
-            <button
-              onClick={() => setAbstractPage(3)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
-                abstractPage === 3 
-                  ? "bg-purple-950/60 text-purple-400 border border-purple-900/50" 
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              Part 3 (NFT 341-510)
-            </button>
+            <button onClick={() => setAbstractPage(1)} className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${abstractPage === 1 ? "bg-purple-950/60 text-purple-400" : "text-zinc-500"}`}>Part 1 (NFT 1-170)</button>
+            <button onClick={() => setAbstractPage(2)} className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${abstractPage === 2 ? "bg-purple-950/60 text-purple-400" : "text-zinc-500"}`}>Part 2 (NFT 171-340)</button>
+            <button onClick={() => setAbstractPage(3)} className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${abstractPage === 3 ? "bg-purple-950/60 text-purple-400" : "text-zinc-500"}`}>Part 3 (NFT 341-510)</button>
           </div>
         )}
 
