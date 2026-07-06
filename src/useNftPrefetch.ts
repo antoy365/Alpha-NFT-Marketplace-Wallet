@@ -21,15 +21,15 @@ export function useNftPrefetch(contractSepolia: any, contractAbstract: any) {
   // Выставили count: 114n, чтобы кэш совпал с витриной магазина
   const { data: nftsSepolia } = useReadContract(getNFTs, {
     contract: contractSepolia,
-    start: 0n,
-    count: 114n,
+    start: BigInt(0) as any,
+    count: BigInt(114) as any,
   });
 
   // 2. ИСПРАВЛЕНО: Передаем 0n и 170n как BigInt для пагинации Abstract (Part 1)
   const { data: nftsAbstract } = useReadContract(getNFTs, {
     contract: contractAbstract,
-    start: 0n,
-    count: 170n,
+    start: BigInt(0) as any,
+    count: BigInt(170) as any,
   });
 
   // 3. Запускаем фоновое скачивание картинок в кэш, как только пришли метаданные
