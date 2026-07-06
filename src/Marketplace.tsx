@@ -27,9 +27,22 @@ export default function Marketplace() {
 
   const isAbstract = activeTab === "abstract_store";
   
-  const currentChain = isAbstract 
+  // Базовая конфигурация сети
+  const baseChain = isAbstract 
     ? abstractTestnet 
     : (selectedNetwork === "polygon" ? polygon : sepolia);
+
+  // ИСПРАВЛЕНО: Динамически подставляем кастомные RPC-провайдеры из .env
+  // Если переменные среды пусты, автоматически включаются свободные публичные ноды блокчейнов
+  const currentChain = {
+    ...baseChain,
+    rpc: isAbstract
+      ? (import.meta.env.VITE_ABSTRACT_RPC_URL || "https://abs.xyz")
+      : (selectedNetwork === "polygon"
+          ? (import.meta.env.VITE_POLYGON_RPC_URL || "https://polygon-rpc.com")
+          : (import.meta.env.VITE_SEPOLIA_RPC_URL || "https://publicnode.com")
+        )
+  };
 
   const contractAddress = isAbstract
     ? "0x1d23f41509eCDf9B0e4537564833E07deAEE2805" 
@@ -37,19 +50,18 @@ export default function Marketplace() {
 
   const contract = getContract({
     client,
-    chain: currentChain, 
+    chain: currentChain, // Теперь контракт опрашивает только ваши кастомные ноды
     address: contractAddress, 
   });
 
   // 3. Динамический расчет диапазона токенов для блокчейна
-  // Стр 1: с 0 по 170 | Стр 2: с 170 по 340 | Стр 3: с 340 по 510
   const startId = isAbstract ? (abstractPage - 1) * ITEMS_PER_PAGE : 0;
-  const totalNftsToFetch = isAbstract ? ITEMS_PER_PAGE : 113;
+  const totalNftsToFetch = isAbstract ? ITEMS_PER_PAGE : 114;
 
-  const { data: nfts, isLoading, error } = useReadContract(getNFTs, { 
+  const { data: nfts, isLoading } = useReadContract(getNFTs, { 
     contract: contract,
-    start: BigInt(startId) as any, // Указываем блокчейну точку старта
-    count: BigInt(totalNftsToFetch) as any, // Запрашиваем только выбранную пачку
+    start: BigInt(startId) as any, 
+    count: BigInt(totalNftsToFetch) as any,
   });
 
   const handleCopyContract = () => {
@@ -66,9 +78,15 @@ export default function Marketplace() {
 
     try {
       if (network === "polygon") {
-        await switchChain(polygon);
+        await switchChain({
+          ...polygon,
+          rpc: import.meta.env.VITE_POLYGON_RPC_URL || "https://polygon-rpc.com"
+        });
       } else {
-        await switchChain(sepolia);
+        await switchChain({
+          ...sepolia,
+          rpc: import.meta.env.VITE_SEPOLIA_RPC_URL || "https://publicnode.com"
+        });
       }
     } catch (e) {
       console.error("The wallet rejected the network switch.:", e);
@@ -79,17 +97,24 @@ export default function Marketplace() {
     if (!account) return;
 
     if (activeTab === "abstract_store") {
-      switchChain(abstractTestnet).catch((e) => console.error("Error switching to Abstract:", e));
+      switchChain({
+        ...abstractTestnet,
+        rpc: import.meta.env.VITE_ABSTRACT_RPC_URL || "https://abs.xyz"
+      }).catch((e) => console.error("Error switching to Abstract:", e));
     } else {
       if (selectedNetwork === "polygon") {
-        switchChain(polygon).catch((e) => console.error("Error switching to Polygon:", e));
+        switchChain({
+          ...polygon,
+          rpc: import.meta.env.VITE_POLYGON_RPC_URL || "https://polygon-rpc.com"
+        }).catch((e) => console.error("Error switching to Polygon:", e));
       } else {
-        switchChain(sepolia).catch((e) => console.error("Error switching to Sepolia:", e));
+        switchChain({
+          ...sepolia,
+          rpc: import.meta.env.VITE_SEPOLIA_RPC_URL || "https://publicnode.com"
+        }).catch((e) => console.error("Error switching to Sepolia:", e));
       }
     }
   }, [activeTab, selectedNetwork, account, switchChain]);
-
-  if (error) return <div style={{ color: "red", padding: "50px" }}>Blockchain error: {error.message}</div>;
 
   return (
     <div className="min-h-screen bg-black text-white px-6 py-10"> 
@@ -133,18 +158,9 @@ export default function Marketplace() {
             
             <button
               onClick={handleCopyContract}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 text-xs font-mono font-medium rounded border transition-all duration-200
-                ${copied 
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300'
-                }`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 text-xs font-mono font-medium rounded border bg-zinc-900 border-zinc-800 text-zinc-400"
             >
               <span>{copied ? "✓ copied!" : "address-contract"}</span>
-              {!copied && (
-                <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              )}
             </button>
           </div>
 
@@ -171,7 +187,7 @@ export default function Marketplace() {
           </div>
         </header>
 
-        {/* 4. ИНТЕРФЕЙС ПОДВКЛАДОК: Отображается ТОЛЬКО когда открыт Abstract */}
+        {/* ИНТЕРФЕЙС ПОДВКЛАДОК: Отображается ТОЛЬКО когда открыт Abstract */}
         {isAbstract && (
           <div className="flex flex-wrap items-center gap-2 mb-6 bg-zinc-950 p-1.5 rounded-lg border border-zinc-900 w-fit">
             <span className="text-xs text-zinc-500 uppercase px-2 font-bold font-mono tracking-wider">Collection:</span>
@@ -208,23 +224,19 @@ export default function Marketplace() {
           </div>
         )}
 
-        {/* Сетка товаров */}
+        {/* Сетка NFT */}
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-white"></div>
-          </div>
+          <div className="text-center py-20 text-zinc-500">Loading blockchain assets...</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {nfts?.map((nft) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {nfts?.map((nft: any) => (
               <NFTCard key={nft.id.toString()} nft={nft} contract={contract} />
             ))}
           </div>
         )}
 
-        {/* Профиль / Личные NFT пользователя */}
-        <div className="mt-20 pt-10 border-t border-zinc-900">
-          <MyNFTs contract={contract} />
-        </div>
+        {/* Блок купленных NFT */}
+        <MyNFTs contract={contract} />
 
       </div>
     </div>

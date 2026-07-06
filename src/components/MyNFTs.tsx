@@ -10,9 +10,10 @@ export const MyNFTs = ({ contract }: { contract: any }) => {
   const chainId = contract?.chain?.id;
 
   // 2. Объявляем флаги для проверки сетей
-  const isAbstract = chainId === 11124;
   const isPolygon = chainId === 137;
-  const isSepolia = chainId ===  11155111;
+  const isSepolia = chainId === 11155111;
+  const isAbstract = chainId === 11124;
+
 
   // 3. Собираем имя сети для красивого заголовка
   let networkName = "Sepolia";
